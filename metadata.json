@@ -1,0 +1,7 @@
+{
+  "name": "The Education Hills",
+  "description": "A comprehensive, emoji-themed school fees and student management system featuring a recycling bin and financial tracking.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
