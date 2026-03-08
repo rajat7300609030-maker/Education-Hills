@@ -295,6 +295,38 @@ const App: React.FC = () => {
     }
   }, [data.settings.currency]);
 
+  const checkAndPromote = (studentId: string) => {
+    setData(prev => {
+      const student = prev.students.find(s => s.id === studentId);
+      if (!student) return prev;
+
+      const studentFees = prev.fees.filter(f => f.studentId === studentId && f.status === 'Paid' && !f.isDeleted);
+      const totalLiability = (student.totalAgreedFees || 0) + (student.backLogs || 0);
+      const paidFees = studentFees.reduce((sum, f) => sum + f.amount, 0);
+
+      if (totalLiability > 0 && paidFees >= totalLiability) {
+        const sessions = prev.schoolProfile.sessions;
+        const currentSession = student.session || prev.schoolProfile.currentSession;
+        const currentSessionIndex = sessions.indexOf(currentSession);
+        
+        if (currentSessionIndex !== -1 && currentSessionIndex < sessions.length - 1) {
+          const nextSession = sessions[currentSessionIndex + 1];
+          
+          setTimeout(async () => {
+            await supabase.from('students').update({ session: nextSession }).eq('id', studentId);
+            showNotification(`🎓 ${student.name} promoted to ${nextSession}!`, 'success');
+          }, 0);
+
+          return {
+            ...prev,
+            students: prev.students.map(s => s.id === studentId ? { ...s, session: nextSession } : s)
+          };
+        }
+      }
+      return prev;
+    });
+  };
+
   const handleAddStudent = async (student: Omit<Student, 'id' | 'isDeleted'>) => {
     const currentSession = data.schoolProfile.currentSession;
     const existingIds = data.students.map(s => {
@@ -380,6 +412,34 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAddClass = async (name: string) => {
+    const newClasses = [...data.classes, name];
+    setData(prev => ({ ...prev, classes: newClasses }));
+    await supabase.from('config').upsert({ id: 'app_config', classes: newClasses });
+    showNotification(`✅ Class ${name} added`, 'success');
+  };
+
+  const handleDeleteClass = async (name: string) => {
+    const newClasses = data.classes.filter(c => c !== name);
+    setData(prev => ({ ...prev, classes: newClasses }));
+    await supabase.from('config').upsert({ id: 'app_config', classes: newClasses });
+    showNotification(`🗑️ Class ${name} removed`, 'info');
+  };
+
+  const handleAddFeeCategory = async (name: string) => {
+    const newCategories = [...data.feeCategories, name];
+    setData(prev => ({ ...prev, feeCategories: newCategories }));
+    await supabase.from('config').upsert({ id: 'app_config', fee_categories: newCategories });
+    showNotification(`✅ Category ${name} added`, 'success');
+  };
+
+  const handleDeleteFeeCategory = async (name: string) => {
+    const newCategories = data.feeCategories.filter(c => c !== name);
+    setData(prev => ({ ...prev, feeCategories: newCategories }));
+    await supabase.from('config').upsert({ id: 'app_config', fee_categories: newCategories });
+    showNotification(`🗑️ Category ${name} removed`, 'info');
+  };
+
   const handleAddFee = async (fee: Omit<FeeRecord, 'id' | 'isDeleted'>) => {
     const currentSession = data.schoolProfile.currentSession;
     const newFee: FeeRecord = { 
@@ -396,6 +456,9 @@ const App: React.FC = () => {
       showNotification(`🚨 Record Error: ${error.message}`, 'error');
     } else {
       showNotification('✅ Fee payment recorded', 'success');
+      if (newFee.status === 'Paid') {
+        checkAndPromote(newFee.studentId);
+      }
     }
   };
 
@@ -409,6 +472,24 @@ const App: React.FC = () => {
       showNotification(`🚨 Record Sync Error: ${error.message}`, 'error');
     } else {
       showNotification('✅ Fee record updated', 'success');
+      if (updatedFee.status === 'Paid') {
+        checkAndPromote(updatedFee.studentId);
+      }
+    }
+  };
+
+  const handleUpdateFeeStatus = async (id: string, status: 'Paid' | 'Pending' | 'Overdue') => {
+    const fee = data.fees.find(f => f.id === id);
+    if (!fee) return;
+
+    setData(prev => ({ 
+      ...prev, 
+      fees: prev.fees.map(f => f.id === id ? { ...f, status } : f) 
+    }));
+    
+    await supabase.from('fees').update({ status }).eq('id', id);
+    if (status === 'Paid') {
+      checkAndPromote(fee.studentId);
     }
   };
 
@@ -528,7 +609,7 @@ const App: React.FC = () => {
       case ViewState.DASHBOARD:
         return <Dashboard data={data} currency={currencySymbol} onUpdateSettings={handleUpdateSettings} onNavigateToFees={() => setCurrentView(ViewState.FEES)} onNavigateToExpenses={() => setCurrentView(ViewState.EXPENSES)} onViewStudentProfile={id => { setSelectedStudentId(id); setCurrentView(ViewState.STUDENT_PROFILE); }} onNavigateToSettings={() => setCurrentView(ViewState.SETTINGS)} onDeleteFee={handleDeleteFee} onDeleteExpense={handleDeleteExpense} userRole={userRole} currentStudentId={currentStudentId} />;
       case ViewState.STUDENTS:
-        return <Students students={sessionStudents} classes={data.classes} fees={sessionFees} currency={currencySymbol} animationStyle={data.settings.studentAnimationStyle || 'slideUp'} onAddStudent={handleAddStudent} onEditStudent={handleEditStudent} onDeleteStudent={handleSoftDeleteStudent} onAddClass={(name) => setData(prev => ({ ...prev, classes: [...prev.classes, name] }))} onDeleteClass={(name) => setData(prev => ({ ...prev, classes: prev.classes.filter(c => c !== name) }))} onNavigateToFees={id => { setSelectedStudentId(id); setCurrentView(ViewState.FEES); }} onViewProfile={id => { setSelectedStudentId(id); setCurrentView(ViewState.STUDENT_PROFILE); }} onViewParent={s => { setSelectedParent({ name: s.parentName, phone: s.phone, address: s.address || '' }); setCurrentView(ViewState.PARENT_PROFILE); }} initialEditingId={studentIdToEdit} onClearEditingId={() => setStudentIdToEdit(null)} />;
+        return <Students students={sessionStudents} classes={data.classes} fees={sessionFees} currency={currencySymbol} animationStyle={data.settings.studentAnimationStyle || 'slideUp'} onAddStudent={handleAddStudent} onEditStudent={handleEditStudent} onDeleteStudent={handleSoftDeleteStudent} onAddClass={handleAddClass} onDeleteClass={handleDeleteClass} onNavigateToFees={id => { setSelectedStudentId(id); setCurrentView(ViewState.FEES); }} onViewProfile={id => { setSelectedStudentId(id); setCurrentView(ViewState.STUDENT_PROFILE); }} onViewParent={s => { setSelectedParent({ name: s.parentName, phone: s.phone, address: s.address || '' }); setCurrentView(ViewState.PARENT_PROFILE); }} initialEditingId={studentIdToEdit} onClearEditingId={() => setStudentIdToEdit(null)} />;
       case ViewState.EMPLOYEES:
         return <Employees employees={sessionEmployees} currency={currencySymbol} onAddEmployee={handleAddEmployee} onEditEmployee={handleEditEmployee} onDeleteEmployee={handleDeleteEmployee} onNotify={showNotification} />;
       case ViewState.STUDENT_PROFILE:
@@ -551,7 +632,7 @@ const App: React.FC = () => {
       case ViewState.FEES:
         {
             const studentIdFilter = userRole === 'STUDENT' ? currentStudentId : selectedStudentId;
-            return <Fees fees={sessionFees} students={sessionStudents} classes={data.classes} feeCategories={data.feeCategories} schoolProfile={data.schoolProfile} currency={currencySymbol} onAddFee={handleAddFee} onUpdateFee={handleUpdateFee} onDeleteFee={handleDeleteFee} onUpdateFeeStatus={async (id, status) => { setData(prev => ({ ...prev, fees: prev.fees.map(f => f.id === id ? { ...f, status } : f) })); await supabase.from('fees').update({ status }).eq('id', id); }} initialStudentId={studentIdFilter} userRole={userRole} />;
+            return <Fees fees={sessionFees} students={sessionStudents} classes={data.classes} feeCategories={data.feeCategories} schoolProfile={data.schoolProfile} currency={currencySymbol} onAddFee={handleAddFee} onUpdateFee={handleUpdateFee} onDeleteFee={handleDeleteFee} onUpdateFeeStatus={handleUpdateFeeStatus} initialStudentId={studentIdFilter} userRole={userRole} />;
         }
       case ViewState.EXPENSES:
         return <Expenses expenses={sessionExpenses} currency={currencySymbol} onAddExpense={handleAddExpense} onEditExpense={async e => { setData(prev => ({ ...prev, expenses: prev.expenses.map(old => old.id === e.id ? e : old) })); await supabase.from('expenses').upsert(e); }} onDeleteExpense={handleDeleteExpense} />;
@@ -563,7 +644,7 @@ const App: React.FC = () => {
       case ViewState.USER_PROFILE:
         return <Profiles type="USER" schoolData={data.schoolProfile} userData={data.userProfile} employees={data.employees} onUpdateSchool={p => setData(prev => ({ ...prev, schoolProfile: p }))} onUpdateUser={u => setData(prev => ({ ...prev, userProfile: u }))} onNotify={showNotification} />;
       case ViewState.SETTINGS:
-        return <Settings settings={data.settings} data={data} dbStatus={dbStatus} dbSyncError={dbSyncError} onUpdateSettings={handleUpdateSettings} onLoadData={newData => setData(newData)} onFactoryReset={handleFactoryReset} onNotify={showNotification} />;
+        return <Settings settings={data.settings} data={data} dbStatus={dbStatus} dbSyncError={dbSyncError} onUpdateSettings={handleUpdateSettings} onLoadData={newData => setData(newData)} onFactoryReset={handleFactoryReset} onNotify={showNotification} onAddClass={handleAddClass} onRemoveClass={handleDeleteClass} onAddFeeCategory={handleAddFeeCategory} onRemoveFeeCategory={handleDeleteFeeCategory} />;
       default:
         return <div className="p-8 text-center text-slate-500 font-bold">Please select an option.</div>;
     }

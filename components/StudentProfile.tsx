@@ -33,6 +33,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({
   const isAdmin = userRole === 'ADMIN';
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
+  const [showPromoteConfirm, setShowPromoteConfirm] = useState(false);
   const [promoteData, setPromoteData] = useState({
     session: '',
     grade: student.grade
@@ -802,7 +803,7 @@ const StudentProfile: React.FC<StudentProfileProps> = ({
                         <select 
                             value={promoteData.session}
                             onChange={(e) => setPromoteData(prev => ({ ...prev, session: e.target.value }))}
-                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-700 outline-none appearance-none cursor-pointer"
+                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-700 outline-none cursor-pointer"
                         >
                             <option value="">Select Session</option>
                             {schoolData.sessions.filter(s => s !== student.session).map(s => (
@@ -815,10 +816,11 @@ const StudentProfile: React.FC<StudentProfileProps> = ({
                         <select 
                             value={promoteData.grade}
                             onChange={(e) => setPromoteData(prev => ({ ...prev, grade: e.target.value }))}
-                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-700 outline-none appearance-none cursor-pointer"
+                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-700 outline-none cursor-pointer"
                         >
+                            <option value="">Select Class</option>
                             {allClasses.map(c => (
-                                <option key={c} value={c}>{c}</option>
+                                <option key={c} value={c}>🏫 {c}</option>
                             ))}
                         </select>
                     </div>
@@ -837,12 +839,65 @@ const StudentProfile: React.FC<StudentProfileProps> = ({
                                 onNotify?.("Please select a target session", "error");
                                 return;
                             }
-                            onPromote?.(student, promoteData.session, promoteData.grade);
-                            setShowPromoteModal(false);
+                            if (!promoteData.grade) {
+                                onNotify?.("Please select a target grade/class", "error");
+                                return;
+                            }
+                            setShowPromoteConfirm(true);
                         }} 
                         className="flex-1 py-4 bg-emerald-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200"
                     >
                         Confirm Promote
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {showPromoteConfirm && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl z-[110] flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-white rounded-[3rem] shadow-2xl p-10 w-full max-w-md animate-scale-in border border-slate-100 text-center">
+                <div className="w-24 h-24 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center text-5xl mx-auto mb-8 shadow-xl shadow-indigo-100 animate-bounce-slow">❓</div>
+                <h3 className="text-2xl font-black text-slate-800 mb-4 tracking-tight">Are you sure?</h3>
+                <div className="bg-slate-50 rounded-3xl p-6 mb-8 text-left space-y-3 border border-slate-100">
+                    <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Student</span>
+                        <span className="text-sm font-black text-slate-700">{student.name}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Father's Name</span>
+                        <span className="text-sm font-black text-slate-700">{student.parentName}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Target Class</span>
+                        <span className="text-sm font-black text-indigo-600">🏫 {promoteData.grade}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Target Session</span>
+                        <span className="text-sm font-black text-emerald-600">📅 {promoteData.session}</span>
+                    </div>
+                </div>
+                
+                <p className="text-slate-500 text-sm font-medium mb-8 leading-relaxed">
+                    Do you want to promote this student with the above details?
+                </p>
+
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => setShowPromoteConfirm(false)} 
+                        className="flex-1 py-4 bg-slate-100 text-slate-600 font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-slate-200 transition-all"
+                    >
+                        No, Cancel
+                    </button>
+                    <button 
+                        onClick={() => {
+                            onPromote?.(student, promoteData.session, promoteData.grade);
+                            setShowPromoteConfirm(false);
+                            setShowPromoteModal(false);
+                        }} 
+                        className="flex-1 py-4 bg-indigo-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+                    >
+                        Yes, Promote
                     </button>
                 </div>
             </div>

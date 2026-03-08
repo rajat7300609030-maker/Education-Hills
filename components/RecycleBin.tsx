@@ -37,10 +37,10 @@ const RecycleBin: React.FC<RecycleBinProps> = ({
   } | null>(null);
 
   const [collapsedBins, setCollapsedBins] = useState<{ [key: string]: boolean }>({
-    students: false,
-    employees: false,
-    fees: false,
-    expenses: false
+    students: true,
+    employees: true,
+    fees: true,
+    expenses: true
   });
 
   const toggleBin = (bin: string) => {

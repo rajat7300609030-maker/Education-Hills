@@ -11,9 +11,26 @@ interface SettingsProps {
   onLoadData: (data: AppData) => void;
   onFactoryReset?: () => Promise<void>;
   onNotify?: (message: string, type: 'success' | 'error' | 'info') => void;
+  onAddClass?: (name: string) => void;
+  onRemoveClass?: (name: string) => void;
+  onAddFeeCategory?: (name: string) => void;
+  onRemoveFeeCategory?: (name: string) => void;
 }
 
-const Settings: React.FC<SettingsProps> = ({ settings, data, dbStatus, dbSyncError, onUpdateSettings, onLoadData, onFactoryReset, onNotify }) => {
+const Settings: React.FC<SettingsProps> = ({ 
+    settings, 
+    data, 
+    dbStatus, 
+    dbSyncError, 
+    onUpdateSettings, 
+    onLoadData, 
+    onFactoryReset, 
+    onNotify,
+    onAddClass,
+    onRemoveClass,
+    onAddFeeCategory,
+    onRemoveFeeCategory
+}) => {
   const [activeTab, setActiveTab] = useState<'general' | 'security' | 'notifications' | 'fees' | 'slider' | 'data' | 'database'>('general');
   const [newSlide, setNewSlide] = useState({ url: '', title: '', description: '' });
   const [isChangingPin, setIsChangingPin] = useState(false);
@@ -21,6 +38,7 @@ const Settings: React.FC<SettingsProps> = ({ settings, data, dbStatus, dbSyncErr
   const [showPins, setShowPins] = useState({ current: false, new: false, confirm: false });
   const [isAddingSlide, setIsAddingSlide] = useState(false);
   const [newCategory, setNewCategory] = useState('');
+  const [newClassName, setNewClassName] = useState('');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   
   // Export Modal State
@@ -178,11 +196,10 @@ const Settings: React.FC<SettingsProps> = ({ settings, data, dbStatus, dbSyncErr
   const handleAddCategory = (e: React.FormEvent) => {
       e.preventDefault();
       if (!newCategory.trim() || data.feeCategories.includes(newCategory.trim())) return;
-      
-      const updatedCategories = [...data.feeCategories, newCategory.trim()];
-      onLoadData({ ...data, feeCategories: updatedCategories });
-      setNewCategory('');
-      onNotify?.(`🏷️ Category "${newCategory}" added`, "success");
+      if (onAddFeeCategory) {
+          onAddFeeCategory(newCategory.trim());
+          setNewCategory('');
+      }
   };
 
   const handleRemoveCategory = (cat: string) => {
@@ -191,9 +208,29 @@ const Settings: React.FC<SettingsProps> = ({ settings, data, dbStatus, dbSyncErr
           onNotify?.("❌ Cannot remove: Category is in use by active records", "error");
           return;
       }
-      const updatedCategories = data.feeCategories.filter(c => c !== cat);
-      onLoadData({ ...data, feeCategories: updatedCategories });
-      onNotify?.("🗑️ Category removed", "info");
+      if (onRemoveFeeCategory) {
+          onRemoveFeeCategory(cat);
+      }
+  };
+
+  const handleAddClassInternal = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newClassName.trim() || data.classes.includes(newClassName.trim())) return;
+      if (onAddClass) {
+          onAddClass(newClassName.trim());
+          setNewClassName('');
+      }
+  };
+
+  const handleRemoveClassInternal = (cls: string) => {
+      const isUsed = data.students.some(s => s.grade === cls && !s.isDeleted);
+      if (isUsed) {
+          onNotify?.("❌ Cannot remove: Class has active students", "error");
+          return;
+      }
+      if (onRemoveClass) {
+          onRemoveClass(cls);
+      }
   };
 
   // --- REFINED REPORT GENERATION LOGIC ---
@@ -778,36 +815,70 @@ const Settings: React.FC<SettingsProps> = ({ settings, data, dbStatus, dbSyncErr
               </div>
           </div>
 
-          <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                    <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
-                        <span>🏷️</span> Fee Category Manager
-                    </h4>
-                </div>
-                
-                <form onSubmit={handleAddCategory} className="flex gap-2 mb-6">
-                    <input 
-                        required placeholder="Add new (e.g. Lab Fee, Picnic)"
-                        className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500"
-                        value={newCategory}
-                        onChange={e => setNewCategory(e.target.value)}
-                    />
-                    <button type="submit" className="px-6 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-100 hover:bg-emerald-700">Add</button>
-                </form>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-6">
+                        <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                            <span>🏷️</span> Fee Category Manager
+                        </h4>
+                    </div>
+                    
+                    <form onSubmit={handleAddCategory} className="flex gap-2 mb-6">
+                        <input 
+                            required placeholder="Add new (e.g. Lab Fee, Picnic)"
+                            className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500"
+                            value={newCategory}
+                            onChange={e => setNewCategory(e.target.value)}
+                        />
+                        <button type="submit" className="px-6 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-100 hover:bg-emerald-700">Add</button>
+                    </form>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {data.feeCategories.map(cat => (
-                        <div key={cat} className="group flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 hover:bg-white hover:border-indigo-200 transition-all">
-                            <span className="text-xs font-black text-slate-600 truncate">{cat}</span>
-                            <button 
-                                onClick={() => handleRemoveCategory(cat)}
-                                className="text-slate-300 hover:text-red-500 transition-colors p-1"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                    ))}
-                </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        {data.feeCategories.map(cat => (
+                            <div key={cat} className="group flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 hover:bg-white hover:border-indigo-200 transition-all">
+                                <span className="text-xs font-black text-slate-600 truncate">{cat}</span>
+                                <button 
+                                    onClick={() => handleRemoveCategory(cat)}
+                                    className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-6">
+                        <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                            <span>🏫</span> Class Manager
+                        </h4>
+                    </div>
+                    
+                    <form onSubmit={handleAddClassInternal} className="flex gap-2 mb-6">
+                        <input 
+                            required placeholder="Add new (e.g. 10-A, 11-B)"
+                            className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
+                            value={newClassName}
+                            onChange={e => setNewClassName(e.target.value)}
+                        />
+                        <button type="submit" className="px-6 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-100 hover:bg-blue-700">Add</button>
+                    </form>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        {data.classes.map(cls => (
+                            <div key={cls} className="group flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 hover:bg-white hover:border-indigo-200 transition-all">
+                                <span className="text-xs font-black text-slate-600 truncate">{cls}</span>
+                                <button 
+                                    onClick={() => handleRemoveClassInternal(cls)}
+                                    className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+              </div>
           </div>
       </div>
   );
