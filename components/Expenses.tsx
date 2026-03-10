@@ -8,13 +8,14 @@ interface ExpensesProps {
   onAddExpense: (expense: Omit<ExpenseRecord, 'id' | 'isDeleted'>) => void;
   onEditExpense: (expense: ExpenseRecord) => void;
   onDeleteExpense: (id: string) => void;
+  initialSearchTerm?: string;
 }
 
-const Expenses: React.FC<ExpensesProps> = ({ expenses, currency, onAddExpense, onEditExpense, onDeleteExpense }) => {
+const Expenses: React.FC<ExpensesProps> = ({ expenses, currency, onAddExpense, onEditExpense, onDeleteExpense, initialSearchTerm = '' }) => {
   // --- State ---
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [activeExpenseId, setActiveExpenseId] = useState<string | null>(null);
-  const [historySearchTerm, setHistorySearchTerm] = useState('');
+  const [historySearchTerm, setHistorySearchTerm] = useState(initialSearchTerm);
   
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);

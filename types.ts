@@ -47,6 +47,8 @@ export interface Employee {
   phone: string;
   email: string;
   joiningDate: string;
+  dob?: string;
+  password?: string;
   status: 'Active' | 'Resigned';
   photo?: string;
   isDeleted: boolean;

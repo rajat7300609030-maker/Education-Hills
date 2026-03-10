@@ -275,15 +275,15 @@ const Students: React.FC<StudentsProps> = ({
         className={`grid transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isFormOpen ? 'grid-rows-[1fr] opacity-100 mb-6' : 'grid-rows-[0fr] opacity-0 mb-0'}`}
       >
         <div className="overflow-hidden">
-             <div className="bg-white rounded-3xl p-8 shadow-xl border border-indigo-100 relative overflow-hidden">
+          <div className="bg-white rounded-3xl p-8 shadow-xl border border-indigo-100 relative overflow-hidden flex flex-col max-h-[90vh]">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-                <div className="flex justify-between items-center mb-6 relative z-10">
+                <div className="flex justify-between items-center mb-6 relative z-10 shrink-0">
                     <h3 className="text-2xl font-black text-slate-800 flex items-center gap-2">
                         {editingId ? <span>✏️ Edit Student</span> : <span>✨ Add New Student</span>}
                     </h3>
                     <button onClick={closeForm} type="button" className="text-slate-400 hover:text-slate-600 transition-colors text-2xl">✕</button>
                 </div>
-                <form id="student-form" onSubmit={handleSubmit} className="relative z-10 animate-fade-in">
+                <form id="student-form" onSubmit={handleSubmit} className="relative z-10 animate-fade-in overflow-y-auto pr-2 scrollbar-hide pb-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         <div className="space-y-5">
                              <h4 className="text-sm font-bold text-indigo-500 uppercase tracking-wider border-b border-indigo-100 pb-2">Profile Info</h4>
@@ -352,7 +352,7 @@ const Students: React.FC<StudentsProps> = ({
                                 ℹ️ Back Fees will be added to the student's due balance.
                              </div>
                              <div className="flex-1"></div>
-                             <div className="flex gap-3 mt-4">
+                             <div className="flex gap-3 mt-4 sticky bottom-0 bg-white pt-2">
                                 <button type="button" onClick={closeForm} className="flex-1 px-4 py-3 text-slate-600 hover:bg-slate-100 rounded-xl font-bold border border-slate-200 transition-colors">Cancel</button>
                                 <button type="submit" className="flex-[2] px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold transition-all shadow-lg active:scale-95">
                                     {editingId ? '💾 Save Changes' : '✅ Add Student'}

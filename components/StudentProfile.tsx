@@ -490,6 +490,10 @@ const StudentProfile: React.FC<StudentProfileProps> = ({
                                               <span className="text-[11px] font-black text-slate-700 font-mono">{student.id}</span>
                                           </div>
                                           <div className="flex justify-between items-center border-b border-slate-100 pb-0.5">
+                                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">DOB</span>
+                                              <span className="text-[11px] font-black text-slate-700">{formatDate(student.dob)}</span>
+                                          </div>
+                                          <div className="flex justify-between items-center border-b border-slate-100 pb-0.5">
                                               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Class</span>
                                               <span className="text-[11px] font-black text-slate-700">{student.grade}</span>
                                           </div>

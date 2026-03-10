@@ -8,6 +8,8 @@ interface SettingsProps {
   dbStatus?: 'Connected' | 'Error' | 'Syncing';
   dbSyncError?: string | null;
   onUpdateSettings: (settings: AppSettings) => void;
+  onUpdateSchoolProfile?: (profile: any) => void;
+  onUpdateUserProfile?: (profile: any) => void;
   onLoadData: (data: AppData) => void;
   onFactoryReset?: () => Promise<void>;
   onNotify?: (message: string, type: 'success' | 'error' | 'info') => void;
@@ -23,6 +25,8 @@ const Settings: React.FC<SettingsProps> = ({
     dbStatus, 
     dbSyncError, 
     onUpdateSettings, 
+    onUpdateSchoolProfile,
+    onUpdateUserProfile,
     onLoadData, 
     onFactoryReset, 
     onNotify,
@@ -809,7 +813,7 @@ const Settings: React.FC<SettingsProps> = ({
                     className="flex-1 w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                     placeholder="Enter school rules for fee payments..."
                     value={data.schoolProfile.termsAndConditions || ''}
-                    onChange={e => onLoadData({ ...data, schoolProfile: { ...data.schoolProfile, termsAndConditions: e.target.value } })}
+                    onChange={e => onUpdateSchoolProfile?.({ ...data.schoolProfile, termsAndConditions: e.target.value })}
                   />
                   <p className="text-[9px] text-slate-400 mt-2">These rules will appear on parent portal and fee receipts.</p>
               </div>
@@ -1290,7 +1294,7 @@ const Settings: React.FC<SettingsProps> = ({
                                                 onClick={() => {
                                                     const sql = `-- Run this in Supabase SQL Editor
 CREATE TABLE IF NOT EXISTS students (id TEXT PRIMARY KEY, name TEXT, roll_no TEXT, class TEXT, section TEXT, parent_name TEXT, phone TEXT, address TEXT, gender TEXT, dob TEXT, admission_date TEXT, status TEXT, session TEXT, is_deleted BOOLEAN DEFAULT FALSE, deleted_at TEXT);
-CREATE TABLE IF NOT EXISTS employees (id TEXT PRIMARY KEY, name TEXT, role TEXT, phone TEXT, email TEXT, salary NUMERIC, joining_date TEXT, status TEXT, session TEXT, is_deleted BOOLEAN DEFAULT FALSE, deleted_at TEXT);
+CREATE TABLE IF NOT EXISTS employees (id TEXT PRIMARY KEY, name TEXT, role TEXT, phone TEXT, email TEXT, salary NUMERIC, joining_date TEXT, dob TEXT, password TEXT, status TEXT, session TEXT, is_deleted BOOLEAN DEFAULT FALSE, deleted_at TEXT);
 CREATE TABLE IF NOT EXISTS fees (id TEXT PRIMARY KEY, student_id TEXT, amount NUMERIC, category TEXT, date TEXT, status TEXT, session TEXT, is_deleted BOOLEAN DEFAULT FALSE, deleted_at TEXT);
 CREATE TABLE IF NOT EXISTS expenses (id TEXT PRIMARY KEY, title TEXT, amount NUMERIC, category TEXT, date TEXT, session TEXT, is_deleted BOOLEAN DEFAULT FALSE, deleted_at TEXT);
 CREATE TABLE IF NOT EXISTS config (id INTEGER PRIMARY KEY, school_profile JSONB, user_profile JSONB, settings JSONB, classes JSONB, fee_categories JSONB);`;
